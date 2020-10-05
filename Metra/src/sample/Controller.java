@@ -10,6 +10,10 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.Pane;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
 public class Controller {
 
     public int operators;
@@ -74,11 +78,12 @@ public class Controller {
 
         Func func = new Func();
 
-        String[] allOperators = {"+", "-", "*", "/", "%", "++", "--", "**", "=", "==", "===", "!=", "!==", "<>", "&", "^", "|", "~", "<<", ">>",
-                                 "<", ">", "<=", ">=", "<=>", "and", "or", "xor", "&&", "||", "!", ".", ".=", "(", "{", "if", "else", "elseif" };
+        String[] allOperators = {" + ", " - ", " * ", "/", "%", "++", "--", "**", " = ", " == ", "===", " != ", "!==", "<>", " & ", "^", " | ", "~", "<<", ">>", " < ", " > ",
+                                 "<= ",">=", "<=>", "and", " or", "xor", "&&", "||", "!", ".", ".= ", "(", "{", " if", " else", " elseif", ",", "+=", "-=", "/=", "%=", "*="};
 
         btnScan.setOnAction(event -> {
             tableOperator.getItems().clear();
+            tableOperand.getItems().clear();
 
             operators = 0;
             operands = 0;
@@ -94,33 +99,10 @@ public class Controller {
 
             newString = scanCode.getText();
 
-            for (int i = 0; i < allOperators.length; i++){
-                if (newString.contains(allOperators[i])){
-                    operators++;
-                }
-            }
-
-            String[] operatorsProgram = new String[operators];
-            String[] operandsProgram = new String[operands];
-
-            int k = 0;
-            for (int i = 0; i < allOperators.length; i++){
-                if (newString.contains(allOperators[i])){
-                    operatorsProgram[k] = allOperators[i];
-                    k++;
-                }
-            }
-
-            for (int i = 0; i < operators; i++){
-                numOperators += func.searchWord(newString, operatorsProgram[i]);
-            }
-            /*
-            char[] check = {'='};
-
-            boolean proverkaOdno = true;
-            boolean proverkaMnogo = true;
+            boolean proverkaOdno = true, proverkaMnogo = true;
 
             char[] mat = newString.toCharArray();
+            char[] stringWithoutComment = new char[mat.length];
 
             for (int i = 0; i < mat.length; i++) {
                 if (i != mat.length - 1 && mat[i] == '/' && mat[i + 1] == '/') {
@@ -132,29 +114,103 @@ public class Controller {
                 if (i != mat.length - 1 && mat[i] == '/' && mat[i + 1] == '*') {
                     proverkaMnogo = false;
                 }
-                if (i != mat.length - 1 && !proverkaMnogo && mat[i] == '*' && mat[i + 1] == '/') {
+                if (i != 0 && !proverkaMnogo && mat[i - 1] == '*' && mat[i] == '/') {
                     proverkaMnogo = true;
                 }
-                for (int j = 0; j < check.length && proverkaOdno && proverkaMnogo; j++) {
-                    if (check[j] == mat[i]) {
-
-                    }
+                if (proverkaOdno && proverkaMnogo) {
+                    stringWithoutComment[i] = mat[i];
                 }
-            }*/
+            }
+
+            String newStringWithout = "";
+
+            for (int i = 0; i < stringWithoutComment.length; i++){
+                newStringWithout += stringWithoutComment[i];
+            }
+
+            char[] charNewString = newStringWithout.toCharArray();
+
+            String[] allOperands = new String[newStringWithout.split("\n").length];
+
+            int cutStart = 0, cutEnd = 0;
+            boolean cut = true;
+            int allOperandsLength = 0;
+
+            for (int i = 0; i < charNewString.length; i++){
+                if (charNewString[i] == '$' && cut){
+                    cutStart = i;
+                    cut = false;
+                }
+                if ((charNewString[i] == ' ' || charNewString[i] == ')' || charNewString[i] == '(' || charNewString[i] == '[' || charNewString[i] == ',' || charNewString[i] == '-' || charNewString[i] == ';' || charNewString[i] == '\'' || charNewString[i] == '+' || charNewString[i] == ']' || charNewString[i] == '.' || charNewString[i] == '\"') && !cut){
+                    cutEnd = i;
+                    allOperands[allOperandsLength] = newStringWithout.substring(cutStart, cutEnd);
+                    allOperandsLength++;
+                    cut = true;
+                }
+            }
+
+            int count = 0;
+
+            for (int i = 0; i < allOperandsLength; i++){
+                if (allOperands[i] != "null"){
+                    count++;
+                }
+            }
+
+            String newAllOperands[] = new String[count];
+            for (int i = 0; i < count; i++){
+                newAllOperands[i] = allOperands[i];
+            }
+
+            for (int i = 0; i < allOperators.length; i++){
+                if (newStringWithout.contains(allOperators[i])){
+                    operators++;
+                }
+            }
+
+            String[] operatorsProgram = new String[operators];
+
+            Set<String> set = new HashSet<String>(Arrays.asList(newAllOperands));
+            String[] operandsProgram = set.toArray(new String[set.size()]);
+
+            operands = operandsProgram.length;
+
+            int k = 0;
+            for (int i = 0; i < allOperators.length; i++){
+                if (newStringWithout.contains(allOperators[i])){
+                    operatorsProgram[k] = allOperators[i];
+                    k++;
+                }
+            }
+
+            for (int i = 0; i < operators; i++){
+                numOperators += func.searchWord(newStringWithout, operatorsProgram[i]);
+            }
+
+            for (int i = 0; i < operands; i++){
+                numOperands += func.searchWord(newStringWithout, operandsProgram[i]);
+            }
 
             int num;
 
             for (int i = 0; i < operators; i++){
-                num = func.searchWord(newString, operatorsProgram[i]);
-                operator.add(new Operators(i + 1, operatorsProgram[i], num));
+                num = func.searchWord(newStringWithout, operatorsProgram[i]);
+                if (operatorsProgram[i].equals("(")){
+                    operator.add(new Operators(i + 1, "(...)", num));
+                } else if (operatorsProgram[i].equals("{")){
+                    operator.add(new Operators(i + 1, "{...}", num));
+                } else {
+                    operator.add(new Operators(i + 1, operatorsProgram[i], num));
+                }
+            }
+
+            for (int i = 0; i < operands; i++){
+                num = func.searchWord(newStringWithout, operandsProgram[i]);
+                operand.add(new Operands(i + 1, operandsProgram[i], num));
             }
 
             tableOperator.setItems(operator);
-
-            for (int i = 0; i < operands; i++){
-                num = func.searchWord(newString, operandsProgram[i]);
-                operand.add(new Operands(i + 1, operandsProgram[i], num));
-            }
+            tableOperand.setItems(operand);
 
             tableOperator.setItems(operator);
 
